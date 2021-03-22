@@ -1,0 +1,42 @@
+/*Написать крипт, добавляющий в БД vk, которую создали на занятии, 3 новые таблицы (с перечнем полей, указанием индексов и внешних ключей)*/
+# Первая таблица - это "друзья".
+# Да, у нас уже есть таблица "Запросы в друзья, но я решил сделать отдельную
+# таблицу. В ней будут отображаться юзер и список юзеров, с которыми статус friend_requests = 'approved'
+DROP TABLE IF EXISTS friends;
+CREATE TABLE friends(
+	user_id BIGINT UNSIGNED NOT NULL,
+	friend_id BIGINT UNSIGNED NOT NULL,
+	created_at DATETIME DEFAULT NOW(), 
+    
+	PRIMARY KEY (user_id, friend_id),
+	FOREIGN KEY (user_id) REFERENCES users(id),
+	FOREIGN KEY (friend_id) REFERENCES users(id),
+	CHECK (user_id <> friend_id)
+);
+
+# Это черный списко. Тут все понятно.
+DROP TABLE IF EXISTS black_list;
+CREATE TABLE black_list(
+	user_id BIGINT UNSIGNED NOT NULL,
+	bad_boy_id BIGINT UNSIGNED NOT NULL,
+	created_at DATETIME DEFAULT NOW(),
+    
+	PRIMARY KEY (user_id, bad_boy_id),
+	FOREIGN KEY (user_id) REFERENCES users(id),
+	FOREIGN KEY (bad_boy_id) REFERENCES users(id),
+	CHECK (user_id <> bad_boy_id)
+);
+# Таблица "Новости" для того, чтобы можно было видеть обновления друзей, 
+# которыми они поделились. (Новые фотки, песни, видео, посты и тд.)
+DROP TABLE IF EXISTS news;
+CREATE TABLE news(
+	id SERIAL,
+	user_id BIGINT UNSIGNED DEFAULT NULL,
+	title VARCHAR(255),
+	media_id BIGINT UNSIGNED NOT NULL,
+	created_at DATETIME DEFAULT NOW(),
+	
+	INDEX news_title(title),
+	FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (media_id) REFERENCES media(id)
+);

@@ -1,0 +1,95 @@
+/*ДОМАШНЕЕ ЗАДАНИЕ К УРОКУ 7*/
+
+/* 1. Составьте список пользователей users, которые осуществили хотя бы один заказ orders в интернет магазине.*/
+
+SELECT DISTINCT *
+FROM users 
+WHERE id IN (SELECT user_id FROM orders)
+; 
+
+/* 2 способ*/
+
+SELECT DISTINCT orders.user_id as 'id',  users.name as 'name'
+FROM users 
+JOIN orders
+ON users.id = orders.user_id 
+; 
+
+/* 2. Выведите список товаров products и разделов catalogs, который соответствует товару.*/
+
+SELECT 
+	name as 'Товар', 
+	(SELECT name FROM catalogs WHERE id = catalog_id) as 'Каталог'
+FROM products
+;
+
+/* 2 Способ*/
+
+SELECT 
+	products.name as 'Товар', 
+	catalogs.name as 'Каталог'
+FROM products 
+JOIN catalogs 
+ON catalogs.id = products.catalog_id
+;
+
+/* 3. (по желанию) Пусть имеется таблица рейсов flights (id, from, to) и таблица городов cities (label, name). 
+ * Поля from, to и label содержат английские названия городов, поле name — русское. 
+ * Выведите список рейсов flights с русскими названиями городов.*/
+
+DROP TABLE IF EXISTS flights;
+CREATE TABLE flights(
+	id SERIAL PRIMARY KEY,
+	`from` VARCHAR(100),
+	`to` VARCHAR(100)
+);
+
+INSERT INTO flights 
+VALUES
+	(DEFAULT, 'New York', 'Rome'),
+	(DEFAULT, 'Moscow', 'Paris'),
+	(DEFAULT, 'Berlin', 'Moscow'),
+	(DEFAULT, 'Tokio', 'Brasilia'),
+	(DEFAULT, 'Minsk', 'New York'),
+	(DEFAULT, 'Kiev', 'Berlin'),
+	(DEFAULT, 'Brasilia', 'Minsk')
+;
+
+DROP TABLE IF EXISTS cities;
+CREATE TABLE cities(
+	`label` VARCHAR(100),
+	`name` VARCHAR(100)
+);
+
+INSERT INTO cities 
+VALUES
+	('New York', 'Нью-Йорк'),
+	('Moscow', 'Москва'),
+	('Berlin', 'Берлин'),
+	('Tokio', 'Токио'),
+	('Minsk', 'Минкс'),
+	('Kiev', 'Киев'),
+	('Brasilia', 'Бразилиа'),
+	('Prague', 'Прага'),
+	('Paris', 'Париж'),
+	('Rome', 'Рим')
+;
+
+SELECT 
+	id,
+	(SELECT name FROM cities WHERE label = `from`) as `from`,
+	(SELECT name FROM cities WHERE label = `to`) as `to`
+FROM flights
+;
+	
+/* 2 Способ*/
+
+SELECT 
+	F.id as 'Номер рейса',
+	C.name as `from`,
+	C1.name as `to`
+FROM flights F
+JOIN cities C ON C.label = F.`from` 
+JOIN cities C1 ON C1.label = F.`to` 
+ORDER BY F.id
+;

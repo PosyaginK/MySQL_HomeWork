@@ -1,0 +1,121 @@
+####################################################################################################
+####################################################################################################
+/*Практическое задание по теме “Оптимизация запросов”*/
+####################################################################################################
+####################################################################################################
+
+####################################################################################################
+/* 1. Создайте таблицу logs типа Archive. Пусть при каждом создании записи в таблицах users, 
+ * catalogs и products в таблицу logs помещается время и дата создания записи, название таблицы, 
+ * идентификатор первичного ключа и содержимое поля name.*/
+####################################################################################################
+
+USE shop;
+-- Создаем таблицу logs типа Archive
+DROP TABLE IF EXISTS `logs`;
+CREATE TABLE `logs` (
+	`tbl_name` VARCHAR(255),
+	`id_fk` BIGINT UNSIGNED,
+	`val_name` VARCHAR(255),
+	`crated_at` DATETIME
+	
+)	ENGINE = ARCHIVE;
+
+-- Создаем триггер для таблицы users
+DELIMITER //
+DROP TRIGGER IF EXISTS `user_insert`//
+CREATE TRIGGER `user_insert` AFTER INSERT ON shop.users 
+FOR EACH ROW 
+BEGIN
+	INSERT INTO logs (`tbl_name`, `id_fk`, `val_name`, `crated_at`)
+	VALUES ('users', NEW.id, NEW.name, NOW());
+END//
+DELIMITER ;
+
+-- Тестируем триггер
+SELECT * FROM `users`;
+SELECT * FROM `logs`;
+
+INSERT INTO `users` (name)
+VALUES ('Jonny');
+
+SELECT * FROM `users`;
+SELECT * FROM `logs`;
+
+-- Создаем триггер для таблицы catalogs
+DELIMITER //
+DROP TRIGGER IF EXISTS `catalog_insert`//
+CREATE TRIGGER `catalog_insert` AFTER INSERT ON shop.catalogs 
+FOR EACH ROW 
+BEGIN
+	INSERT INTO logs (`tbl_name`, `id_fk`, `val_name`, `crated_at`)
+	VALUES ('catalogs', NEW.id, NEW.name, NOW());
+END//
+DELIMITER ;
+
+-- Создаем триггер для таблицы products
+DELIMITER //
+DROP TRIGGER IF EXISTS `product_insert`//
+CREATE TRIGGER `product_insert` AFTER INSERT ON shop.products 
+FOR EACH ROW 
+BEGIN
+	INSERT INTO logs (`tbl_name`, `id_fk`, `val_name`, `crated_at`)
+	VALUES ('products', NEW.id, NEW.name, NOW());
+END//
+DELIMITER ;
+
+-- Тестируем триггеры
+SELECT * FROM `catalogs`;
+SELECT * FROM `products`;
+SELECT * FROM `logs`;
+
+INSERT INTO `catalogs` (name)
+VALUES ('Карты памяти');
+
+INSERT INTO `products` (name)
+VALUES ('MicroSD DanDisk Ultra UHS-II');
+
+SELECT * FROM `catalogs`;
+SELECT * FROM `products`;
+SELECT * FROM `logs`;
+
+####################################################################################################
+/* 2. (по желанию) Создайте SQL-запрос, который помещает в таблицу users миллион записей.*/
+####################################################################################################
+
+USE example;
+
+DROP TABLE IF EXISTS `million_users`; 
+CREATE TABLE `million_users` (
+	`id` SERIAL PRIMARY KEY,
+	`name` VARCHAR(255),
+	`birthday_at` DATE,
+	`created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+ 	`updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+
+DROP PROCEDURE IF EXISTS insert_million_users;
+DELIMITER //
+CREATE PROCEDURE insert_million_users()
+BEGIN
+	DECLARE i INT DEFAULT 1000000;
+	DECLARE j INT DEFAULT 0;
+	WHILE i > 0 DO
+		INSERT INTO `million_users`(`name`, `birthday_at`) 
+		VALUES (CONCAT('user_', j), FROM_UNIXTIME(UNIX_TIMESTAMP("1990-01-01") - ROUND(RAND()*('500000000'-'100000000')+'100000000'), '%Y-%m-%d'));
+		SET j = j + 1;
+		SET i = i - 1;
+	END WHILE;
+END //
+delimiter ;
+
+SELECT * FROM million_users; -- Таблица пустая
+
+CALL insert_million_users(); -- Очень долгий запрос
+
+SELECT MAX(id) FROM million_users; -- Почти за час сгенерировалось 7934 записи. Преравл запрос
+
+
+-- В разборе ДЗ посмотрел как это делать через объединение таблиц. 
+-- Но там повторяется 10 значений. У меня же генерировались уникальные. 
